@@ -71,6 +71,16 @@ def test_clustering_rejects_duplicate_patient_ids_and_missing_features() -> None
         cluster_patients(patients)
 
 
+def test_presentation_chart_is_written(tmp_path) -> None:
+    from genomic_segmentation.charts import build_presentation_chart
+
+    result = cluster_patients(generate_demo_data(n_patients=60, n_genes=20), n_clusters=3)
+    output = build_presentation_chart(result, tmp_path / "charts" / "summary.png")
+
+    assert output.is_file()
+    assert output.read_bytes()[:8] == b"\x89PNG\r\n\x1a\n"
+
+
 def test_roi_projection_matches_notebook_assumptions() -> None:
     result = roi_projection(1000)
 

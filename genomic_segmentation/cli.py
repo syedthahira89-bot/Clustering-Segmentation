@@ -24,6 +24,10 @@ def build_parser() -> argparse.ArgumentParser:
     segment.add_argument("--input", required=True, help="Patient features CSV")
     segment.add_argument("--output", default="outputs/crm_roster.csv")
     segment.add_argument("--clusters", type=int, default=3)
+    chart = commands.add_parser("chart", help="Create the presentation chart (PNG)")
+    chart.add_argument("--input", help="Patient features CSV; defaults to synthetic demo data")
+    chart.add_argument("--output", default="docs/images/segmentation-summary.png")
+    chart.add_argument("--clusters", type=int, default=3)
     return parser
 
 
@@ -31,6 +35,14 @@ def main() -> int:
     args = build_parser().parse_args()
     destination = Path(args.output)
     destination.parent.mkdir(parents=True, exist_ok=True)
+
+    if args.command == "chart":
+        from .charts import build_presentation_chart
+
+        patients = pd.read_csv(args.input) if args.input else generate_demo_data()
+        result = cluster_patients(patients, n_clusters=args.clusters)
+        print(f"Wrote presentation chart to {build_presentation_chart(result, destination)}")
+        return 0
 
     if args.command == "demo":
         generate_demo_data(args.patients, args.genes, args.seed).to_csv(

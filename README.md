@@ -11,6 +11,21 @@ and local dashboard.
 > segment labels for care decisions. CRM output is a demonstration CSV; there
 > is no live EHR or CRM connection.
 
+## Presentation chart
+
+![Genomic CRM segmentation summary chart](docs/images/segmentation-summary.png)
+
+The one-slide summary shows the PCA cohort map, segment mix, and the
+illustrative cost-versus-net-savings scenario. Regenerate it (optionally from
+your own synthetic CSV) with:
+
+```powershell
+genomic-segmentation chart --output docs/images/segmentation-summary.png
+```
+
+The silhouette score is computed in the full scaled feature space, so it can be
+low even when the 2-D PCA view shows clearly separated clusters.
+
 ## Run locally
 
 From this folder in PowerShell:
