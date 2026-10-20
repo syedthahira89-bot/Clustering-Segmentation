@@ -26,6 +26,99 @@ genomic-segmentation chart --output docs/images/segmentation-summary.png
 The silhouette score is computed in the full scaled feature space, so it can be
 low even when the 2-D PCA view shows clearly separated clusters.
 
+## Key insights
+
+Results below come from the default synthetic demo (150 patients, 500 gene
+features, seed 42, 3 clusters). They describe how the method behaves on planted
+data, not on real patients.
+
+| Segment (rule-derived) | Patients | Cardio PRS | Diabetes PRS | Mean BMI | PGx concern rate | Campaign |
+| :--- | :---: | :---: | :---: | :---: | :---: | :--- |
+| High-Risk Cardiological | 50 | 0.86 | 0.79 | 31.1 | 20% | `CAMP-CARDIO-2026` |
+| PGx Suboptimal Metabolizer | 50 | 0.25 | 0.29 | 25.5 | 100% | `CAMP-PGX-ALERT` |
+| Proactive Wellness | 50 | 0.26 | 0.23 | 26.2 | 18% | `CAMP-LONGEVITY` |
+
+- **The method recovers planted structure.** K-means assigned all 150 patients
+  to the cohort they were generated from (adjusted Rand index 1.0 across seeds
+  1, 7, and 42). This is expected for synthetic data with injected signal. It
+  shows the pipeline works, not that real genomic data will separate this
+  cleanly.
+- **Segments are distinguishable on clinical profile as well as genes.** The
+  cardiological cluster stands out on both polygenic risk scores and BMI. The
+  PGx cluster is defined by its metabolizer status (100% intermediate or poor).
+  The wellness cluster is the low-risk baseline.
+- **Each cluster has its own gene signature.** The top differentiating genes
+  fall in the injected blocks (for example `gene_034` and `gene_008` for the
+  cardiological cluster, `gene_075` and `gene_079` for the PGx cluster).
+- **A low silhouette score does not mean poor clusters here.** The silhouette
+  is 0.08 even though the PCA map shows three clear groups. With 500 noisy gene
+  dimensions in the distance calculation, within-cluster noise dominates. The
+  two PCA components show only 15.9% of total variance. Silhouette also peaks
+  at k=2 (0.093) rather than k=3 (0.082), so it should not be the sole guide to
+  choosing the number of clusters.
+- **Engagement barely differs between segments.** Portal logins (3.7 to 4.1 per
+  month) and wellness participation (30% to 44%) are close across clusters, so
+  engagement is not what separates these segments.
+
+## Takeaways
+
+- Combining genomic and clinical features can produce interpretable cohorts
+  that map directly to a small set of CRM actions.
+- The pipeline is reproducible end to end: validate, scale, cluster, profile,
+  and export a pseudonymous roster. The CRM export contains no biomarkers.
+- Segment names come from threshold rules on cluster averages. They are labels
+  for communication, not diagnoses.
+- The notebook's segment counts (7, 4, and 2 patients) came from random
+  assignment of 13 example patients, not from clustering. Only this project's
+  pipeline derives segments from data.
+
+## ROI scenario: what it does and does not show
+
+At the notebook's assumptions (20% baseline readmission, 25% relative
+reduction, $15,200 per readmission, $75,000 fixed plus $150 per patient):
+
+| Cohort | Gross savings | Project cost | Net scenario |
+| ---: | ---: | ---: | ---: |
+| 500 | $380,000 | $150,000 | $230,000 |
+| 1,000 | $760,000 | $225,000 | $535,000 |
+| 5,000 | $3,800,000 | $825,000 | $2,975,000 |
+| 25,000 | $19,000,000 | $3,825,000 | $15,175,000 |
+
+- Break-even is about 123 patients under these assumptions.
+- Savings scale **linearly** with cohort size. Only the ratio of savings to cost
+  improves, and it levels off near 5x as the fixed cost is spread out. The
+  notebook's description of "non-linear" savings is not supported by its own
+  formula.
+- The model applies the 25% reduction to every patient in the cohort. In
+  practice only patients with a relevant risk (for example PGx flags) could
+  benefit, so the real addressable group is likely much smaller.
+- Every input is an assumption. None is measured by this project.
+
+## Recommendations
+
+1. **Validate on real, approved data before drawing conclusions.** Run under
+   the proper privacy, consent, and governance controls, and keep real patient
+   data out of this demo tooling.
+2. **Choose the number of clusters deliberately.** Compare several values of k
+   with stability checks across seeds, and review clusters with clinicians
+   instead of relying on one metric.
+3. **Reduce dimensions before clustering real genomic data.** Selecting
+   informative features or clustering on PCA components would raise cluster
+   separation scores and reduce noise.
+4. **Use pharmacogenomic rules from established clinical guidance.** Do not
+   infer PGx status from unsupervised clusters. Keep medication decisions with
+   qualified clinicians and pharmacists.
+5. **Replace ROI assumptions with local measurements.** Use observed
+   readmission rates, intervention costs, and the share of patients each
+   campaign can actually reach. Test impact in a controlled pilot with a
+   comparison group before claiming savings.
+6. **Check fairness before use.** Compare segment assignment and campaign
+   outreach across demographic groups, and confirm consent for each
+   outreach channel.
+7. **Integrate with a CRM only through an approved path.** The current output
+   is a CSV. A live connection needs security review, audit logging, and
+   access controls.
+
 ## Run locally
 
 From this folder in PowerShell:
